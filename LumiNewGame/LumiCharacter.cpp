@@ -199,6 +199,35 @@ void ALumiCharacter::Tick(float DeltaTime)
 			SetActorRelativeRotation(NewDirection.Rotation());
 		}
 	}
+
+	{
+		// skill cool down
+		for (auto& a : SkillCoolTimeList)
+		{
+			if (SkillInCoolTime.Contains(a.Key))
+			{
+				if (SkillInCoolTime[a.Key])
+				{
+					if (a.Value > -1)
+					{
+						a.Value += DeltaTime;
+						if (MaxSkillCoolTime.Contains(a.Key))
+						{
+							if (a.Value >= MaxSkillCoolTime[a.Key])
+							{
+								a.Value = -1;
+								SkillInCoolTime.Emplace(a.Key, 0);
+							}
+						}
+					}
+				}
+				
+			}
+			else {
+				SkillInCoolTime.Emplace(a.Key, 1);
+			}
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -467,29 +496,109 @@ void ALumiCharacter::UpdateBoostShow()
 /////////////
 void ALumiCharacter::TestSkillShoot()
 {
-	FVector StartVector = GetActorLocation() + FVector(0.f, 0.f, 150.f);
+	int skillId = 1;
+
+	if (!CheckSkillEnabled(skillId))
+	{
+		return;
+	}
 
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
+	FSkillData data;
+	if (!lumiGameMode->GetSkillDataById(data, skillId))
+	{
+		return;
+	}
+
+	SkillInCoolTime.Emplace(skillId, 1);
+	SkillCoolTimeList.Emplace(skillId, 0.f);
+	if (!MaxSkillCoolTime.Contains(skillId))
+	{
+		MaxSkillCoolTime.Emplace(skillId, data.CoolTime);
+	}
+
+	FVector StartVector = GetActorLocation() + FVector(0.f, 0.f, 180.f);
 	FRotator BulletRotation = lumiGameMode->LumiCameraActor->GetSpringArmRotation();
 
 	FVector MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(100.f, 0.f, 0.f));
-
 	FRotator MuzzleRotation = BulletRotation;
 	MuzzleRotation.Pitch += 10.f;
 
-	FActorSpawnParameters spawnParams;
-	spawnParams.Owner = this;
-	spawnParams.Instigator = GetInstigator();
-
-	if(LumiBulletClass)
+	if (LumiBulletClass)
 	{
-		ALumiSkillBullet* bullet = GetWorld()->SpawnActor<ALumiSkillBullet>(LumiBulletClass, MuzzleLocation, MuzzleRotation, spawnParams);
-		if (bullet)
+		switch (data.BallNum)
 		{
-			bullet->InitSkillSphereInfo(15, 3000.f);
-			FVector LaunchDirection = MuzzleRotation.Vector();
-			bullet->FireInDirection(LaunchDirection);
+		case 1:
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			break;
+		case 3:
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(100.f, -50.f, -50.f));
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(100.f, 50.f, -50.f));
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			break;
+		case 5:
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			break;
+		default:
+			break;
 		}
 	}
+}
+
+void ALumiCharacter::LuanchBallSkill(int skillId, int skillType, FVector startLocation, FRotator startRotation)
+{
+	if (LumiBulletClass)
+	{
+		FActorSpawnParameters spawnParams;
+		spawnParams.Owner = this;
+		spawnParams.Instigator = GetInstigator();
+		ALumiSkillBullet* bullet = GetWorld()->SpawnActor<ALumiSkillBullet>(LumiBulletClass, startLocation, startRotation, spawnParams);
+		if (bullet)
+		{
+			bullet->InitSkillSphereInfo(skillId);
+			bullet->FireInDirection(startRotation.Vector());
+		}
+	}
+}
+
+bool ALumiCharacter::CheckSkillEnabled(int skillId)
+{
+	ALumiNewGameGameModeBase* lumiGameMode;
+	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
+
+	FSkillData data;
+	if (!lumiGameMode->GetSkillDataById(data, skillId))
+	{
+		check(GEngine != nullptr);
+		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, FString::Printf(TEXT("SkillID = %d, No skill"), skillId));
+
+		return false;
+	}
+	
+	// check mp
+	if (lumiStatus.curMP < data.MPCost)
+	{
+		check(GEngine != nullptr);
+		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, FString::Printf(TEXT("SkillID = %d, Not Enough MP"), skillId));
+
+		return false;
+	}
+
+	// cool down
+	if (SkillInCoolTime.Contains(skillId) && (SkillInCoolTime[skillId] == 1))
+	{
+		check(GEngine != nullptr);
+		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, FString::Printf(TEXT("SkillID = %d, Is In Cool Time"), skillId));
+
+		return false;
+	}
+	
+	return true;
 }

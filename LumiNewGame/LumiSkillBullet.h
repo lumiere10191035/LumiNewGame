@@ -7,6 +7,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "ReadImportData.h"
 #include "LumiSkillBullet.generated.h"
 
 UCLASS()
@@ -32,7 +33,7 @@ public:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
-	void InitSkillSphereInfo(float Radius, float Speed);
+	void InitSkillSphereInfo(int skill_id);
 	void FireInDirection(const FVector& _direction);
 
 	UPROPERTY(VisibleDefaultsOnly, Category = SkillSphere)
@@ -47,4 +48,6 @@ public:
 protected:
 	float bulletLife;
 	float bulletCurLife;
+	int SkillDamage;
+	int SkillType;
 };

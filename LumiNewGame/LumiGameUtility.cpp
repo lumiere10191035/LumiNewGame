@@ -35,3 +35,8 @@ AActor* ALumiNewGameGameModeBase::CreateNewActorByBP(FString path)
 	
 	return spawnActor;
 }
+
+bool ALumiNewGameGameModeBase::GetSkillDataById(FSkillData& _skillData, int _skillId)
+{
+	return gameUtility->GetSkillDataById(_skillData, _skillId);
+}

@@ -25,7 +25,7 @@ ALumiEnemyUnit::ALumiEnemyUnit()
 	BodyMeshComp->SetupAttachment(CollisionComponent);
 	BodyMeshComp->SetRelativeLocation(FVector(0.f));
 
-	LifePoint = 100;
+	LifePoint = 1000;
 }
 
 // Called when the game starts or when spawned
@@ -53,6 +53,8 @@ void ALumiEnemyUnit::GetDamageBySkill(int _damage)
 {
 	LifePoint -= _damage;
 	
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Enemy cur HP: %d"), LifePoint));
+
 	if (LifePoint <= 0)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("Enemy Die!"));

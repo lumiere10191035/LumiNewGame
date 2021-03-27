@@ -3,6 +3,7 @@
 
 #include "LumiSkillBullet.h"
 #include "LumiEnemyUnit.h"
+#include "LumiNewGameGameModeBase.h"
 
 // Sets default values
 ALumiSkillBullet::ALumiSkillBullet()
@@ -23,6 +24,8 @@ ALumiSkillBullet::ALumiSkillBullet()
 	if (!SkillMesh)
 	{
 		SkillMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LumiMesh"));
+		SkillMesh->SetupAttachment(SkillSphereComp);
+		SkillMesh->SetRelativeLocation(FVector(0.f));
 		SkillMesh->SetRelativeScale3D(FVector(1.0f));
 	}
 	if (!moveComponent)
@@ -54,25 +57,34 @@ void ALumiSkillBullet::Tick(float DeltaTime)
 	}
 }
 
-void ALumiSkillBullet::InitSkillSphereInfo(float _radius, float _speed)
+void ALumiSkillBullet::InitSkillSphereInfo(int skill_id)
 {
+	ALumiNewGameGameModeBase* lumiGameMode;
+	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
+
+	FSkillData data;
+	if (!lumiGameMode->GetSkillDataById(data, skill_id))
+		return;
+
 	if (SkillSphereComp)
 	{
-		SkillSphereComp->InitSphereRadius(_radius);
+		SkillSphereComp->InitSphereRadius(data.BallRadius);
 	}
 	if (SkillMesh)
 	{
-		SkillMesh->SetRelativeScale3D(FVector(0.5f));
+		SkillMesh->SetRelativeScale3D(FVector(0.1f));
 	}
 	if (moveComponent)
 	{
-		moveComponent->InitialSpeed = 3000.f;
-		moveComponent->MaxSpeed = 3000.f;
+		moveComponent->InitialSpeed = data.BallSpeed;
+		moveComponent->MaxSpeed = data.BallSpeed;
 		moveComponent->bRotationFollowsVelocity = true;
 		moveComponent->bShouldBounce = false;
 		moveComponent->ProjectileGravityScale = 0.0f;
 
-		bulletLife = 3.f;
+		bulletLife = data.BallTime;
+		SkillDamage = data.Damage;
+		SkillType = data.SkillType;
 	}
 }
 
@@ -83,17 +95,17 @@ void ALumiSkillBullet::FireInDirection(const FVector& _direction)
 
 void ALumiSkillBullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor != this && OtherComponent->IsSimulatingPhysics())
+	if (OtherActor != this)
 	{
 		if (Cast<ALumiEnemyUnit>(OtherActor) != nullptr)
 		{
 			// Hit Enemy
 			int damage = 10;
 			ALumiEnemyUnit* enemy = Cast<ALumiEnemyUnit>(OtherActor);
-			enemy->GetDamageBySkill(10);
-		}
-		DestroyBullet();
+			enemy->GetDamageBySkill(SkillDamage);
+		}	
 	}
+	DestroyBullet();
 }
 
 void ALumiSkillBullet::DestroyBullet()

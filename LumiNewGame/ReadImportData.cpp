@@ -134,3 +134,26 @@ bool UReadImportData::ImportGameParam(FLumiGameParam& CharaSkill)
 
 	return ret;
 }
+
+bool UReadImportData::ImportAllSkillData(TMap<int, FSkillData>& _SkillList)
+{
+	bool ret = false;
+	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/SkillData.SkillData'"));
+	FString ContextString;
+	TArray<FName> RowNames;
+	_SkillList.Empty();
+	RowNames = pDataTable->GetRowNames();
+	for (auto name : RowNames)
+	{
+		
+		FSkillData* tempData = pDataTable->FindRow<FSkillData>(name, ContextString);
+		if (tempData != nullptr)
+		{
+			FSkillData data = *tempData;
+			_SkillList.Emplace(data.Skill_Id, *tempData);
+			ret = true;
+		}
+	}
+
+	return ret;
+}

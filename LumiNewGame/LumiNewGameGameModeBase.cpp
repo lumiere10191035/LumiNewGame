@@ -14,6 +14,8 @@ void ALumiNewGameGameModeBase::BeginPlay()
 
 	scoreDelegate.BindUFunction(this, "AddGameScore");
 	gameResultInitDelegate.BindUFunction(this, "UpdateResultUMG");
+
+	gameUtility = new LumiUtility();
 }
 
 void ALumiNewGameGameModeBase::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass)
@@ -50,6 +52,8 @@ void ALumiNewGameGameModeBase::OnClickStartBtn()
 
 	InitGameUMG();
 	InitGamePointObj();
+	InitTypeRatio();
+	InitSystemSkillData();
 }
 
 void ALumiNewGameGameModeBase::InitGameParam()
@@ -120,6 +124,49 @@ void ALumiNewGameGameModeBase::InitGamePointObj()
 			//newNpc->AttachStaticMesh(path);
 			newNpc->UpdateInitData(npcData.Radius, npcData.Size, npcData.Score, npcData.Exp, npcData.Path);
 		}
+	}
+}
+
+void ALumiNewGameGameModeBase::InitTypeRatio()
+{
+	gameUtility->DamageRatio.Empty();
+	// fire water thunder devine;
+	TMap<int, float> fire_ratio;
+	fire_ratio.Emplace(1, 0.7f);
+	fire_ratio.Emplace(2, 0.5f);
+	fire_ratio.Emplace(3, 1.5f);
+	fire_ratio.Emplace(4, 0.9f);
+
+	TMap<int, float> water_ratio;
+	water_ratio.Emplace(1, 1.5f);
+	water_ratio.Emplace(2, 0.5f);
+	water_ratio.Emplace(3, 1.0f);
+	water_ratio.Emplace(4, 0.9f);
+
+	TMap<int, float> thunder_ratio;
+	thunder_ratio.Emplace(1, 1.0f);
+	thunder_ratio.Emplace(2, 1.5f);
+	thunder_ratio.Emplace(3, 0.5f);
+	thunder_ratio.Emplace(4, 0.9f);
+
+	TMap<int, float> devine_ratio;
+	devine_ratio.Emplace(1, 1.1f);
+	devine_ratio.Emplace(2, 1.1f);
+	devine_ratio.Emplace(3, 1.1f);
+	devine_ratio.Emplace(4, 1.0f);
+
+	gameUtility->DamageRatio.Emplace(1, fire_ratio);
+	gameUtility->DamageRatio.Emplace(2, water_ratio);
+	gameUtility->DamageRatio.Emplace(3, thunder_ratio);
+	gameUtility->DamageRatio.Emplace(4, devine_ratio);
+}
+
+void ALumiNewGameGameModeBase::InitSystemSkillData()
+{
+	gameUtility->SystemSkillData.Empty();
+	if (UReadImportData::ImportAllSkillData(gameUtility->SystemSkillData))
+	{
+
 	}
 }
 

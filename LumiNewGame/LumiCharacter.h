@@ -21,7 +21,7 @@ struct LumiCharacterStatus {
 	int curExp;
 };
 
-struct LumiCharaSkill {
+struct LumiCharaFlash {
 	int FlashCost;
 	float FlashCoolDown;
 	float FlashCurCoolDown;
@@ -122,12 +122,19 @@ public:
 	FLumiImportData LevelData;
 	int CharacterLevel;
 	LumiCharacterStatus lumiStatus;
-	LumiCharaSkill skillFlash;
+	LumiCharaFlash skillFlash;
+	TMap<int, float> SkillCoolTimeList;
+	TMap<int, float> MaxSkillCoolTime;
+	TMap<int, int> SkillInCoolTime;
 
 	UPROPERTY(EditAnywhere, Category = Projectile)
 	TSubclassOf<class ALumiSkillBullet> LumiBulletClass;
 
 protected:
+	bool CheckSkillEnabled(int skillId);
+
+	void LuanchBallSkill(int skillId, int skillType, FVector startLocation, FRotator startRotation);
+
 	class UCharacterMovementComponent* characterMove;
 	UCapsuleComponent* capsuleCom;
 	

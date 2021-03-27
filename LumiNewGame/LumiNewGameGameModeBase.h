@@ -63,10 +63,14 @@ public:
 	void SetBGameExitShow(bool b);
 	bool GetBGameExitShow() { return bGameExitShow; }
 
+	LumiUtility* gameUtility;
+
 protected:
 	virtual void BeginPlay() override;
 
 	void InitGamePointObj();
+	void InitTypeRatio();
+	void InitSystemSkillData();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UMG Game")
 	TSubclassOf<UUserWidget> StartingWidgetClass;
@@ -95,6 +99,7 @@ public:
 	// GameUtility
 	bool CreateNewUserUMG(FString path);
 	AActor* CreateNewActorByBP(FString path);
+	bool GetSkillDataById(FSkillData& _skillData, int _skillId);
 
 	UPROPERTY(VisibleAnywhere)
 	ALumiCameraThird* LumiCameraActor;

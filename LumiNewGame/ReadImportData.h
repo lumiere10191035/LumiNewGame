@@ -122,12 +122,34 @@ struct FSkillData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 
 public:
-	FSkillData() : TargetScore(0), GameMaxTime(0.f) {}
+	FSkillData() : Skill_Id(0), 
+		MPCost(0),
+		Damage(0),
+		SkillType(0),
+		BallRadius(0.f),
+		BallSpeed(0.f),
+		Blueprint("") {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
-		int TargetScore;
+		int Skill_Id;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
-		float GameMaxTime;
+		int MPCost;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		float CoolTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		int Damage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		int BallNum;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		int SkillType;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		float BallRadius;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		float BallTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		float BallSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		FString Blueprint;
 };
 
 /////////////////////////////////////////////////
@@ -159,5 +181,8 @@ public:
 	static bool ImportCharaSkill(FLumiSkill& CharaSkill);
 
 	UFUNCTION(BlueprintCallable, Category = Character)
-	static bool ImportGameParam(FLumiGameParam& CharaSkill);
+	static bool ImportGameParam(FLumiGameParam& GameParam);
+
+	UFUNCTION(BlueprintCallable, Category = Character)
+	static bool ImportAllSkillData(TMap<int, FSkillData>& SkillList);
 };
