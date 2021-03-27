@@ -16,6 +16,12 @@ void ALumiNewGameGameModeBase::BeginPlay()
 	gameResultInitDelegate.BindUFunction(this, "UpdateResultUMG");
 
 	gameUtility = new LumiUtility();
+	enemyController = new LumiEnemyController();
+
+	InitEnemyControllerData();
+	InitTypeRatio();
+	InitSystemSkillData();
+	SavePointObjPos();
 }
 
 void ALumiNewGameGameModeBase::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass)
@@ -52,8 +58,7 @@ void ALumiNewGameGameModeBase::OnClickStartBtn()
 
 	InitGameUMG();
 	InitGamePointObj();
-	InitTypeRatio();
-	InitSystemSkillData();
+	InitGameEnemy();
 }
 
 void ALumiNewGameGameModeBase::InitGameParam()
@@ -63,9 +68,25 @@ void ALumiNewGameGameModeBase::InitGameParam()
 	{
 		TargetScore = gameParam.TargetScore;
 		GameTime = gameParam.GameMaxTime;
+		PointObjNum = gameParam.PointNum;
 
 		LumiScore = 0;
 		TimeCount = 0.f;
+	}
+}
+
+void ALumiNewGameGameModeBase::SavePointObjPos()
+{
+	gameUtility->PointPosList.Empty();
+	if (UReadImportData::ImportAllPointPosData(gameUtility->PointPosList))
+	{
+
+	}
+
+	gameUtility->PointObjDataList.Empty();
+	if (UReadImportData::ImportPointObj(gameUtility->PointObjDataList))
+	{
+
 	}
 }
 
@@ -105,25 +126,47 @@ void ALumiNewGameGameModeBase::InitGameUMG()
 
 void ALumiNewGameGameModeBase::InitGamePointObj()
 {
-	TArray<FPointObjData> PointDataList;
-	TArray<FString> NameList;
-
-	if (UReadImportData::ImportPointObj(PointDataList, NameList))
+	if (gameUtility->PointObjDataList.Num() >= 2)
 	{
-		// Read PointNPC
-		for (auto npcData : PointDataList)
+		for (int i = 0; i < PointObjNum; i++)
 		{
-			FVector pos = FVector(npcData.PosX, npcData.PosY, npcData.PosZ);
-			FString path = "\"" +  npcData.Path + "\"";
-
-			//check(GEngine != nullptr);
-			//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Create POINT"));
-
-			FActorSpawnParameters defaultParam;
-			APointNPC* newNpc = GetWorld()->SpawnActor<APointNPC>(APointNPC::StaticClass(), pos, FRotator::ZeroRotator);
-			//newNpc->AttachStaticMesh(path);
-			newNpc->UpdateInitData(npcData.Radius, npcData.Size, npcData.Score, npcData.Exp, npcData.Path);
+			CreateNewPointUnit();
 		}
+	}
+
+	//if (UReadImportData::ImportPointObj(PointDataList, NameList))
+	//{
+	//	// Read PointNPC
+	//	for (auto npcData : PointDataList)
+	//	{
+	//		FVector pos = FVector(npcData.PosX, npcData.PosY, npcData.PosZ);
+	//		FString path = "\"" +  npcData.Path + "\"";
+
+	//		//check(GEngine != nullptr);
+	//		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Create POINT"));
+
+	//		FActorSpawnParameters defaultParam;
+	//		APointNPC* newNpc = GetWorld()->SpawnActor<APointNPC>(APointNPC::StaticClass(), pos, FRotator::ZeroRotator);
+	//		//newNpc->AttachStaticMesh(path);
+	//		newNpc->UpdateInitData(npcData.Radius, npcData.Size, npcData.Score, npcData.Exp, npcData.Path);
+	//	}
+	//}
+}
+
+void ALumiNewGameGameModeBase::InitEnemyControllerData()
+{
+	enemyController->EnemyDataList.Empty();
+	if (UReadImportData::ImportAllEnemyData(enemyController->EnemyDataList))
+	{
+
+	}
+}
+
+void ALumiNewGameGameModeBase::InitGameEnemy()
+{
+	for (int i = 0; i < 10; i++)
+	{
+		CreateNewEnemyUnit(i);
 	}
 }
 
@@ -163,11 +206,11 @@ void ALumiNewGameGameModeBase::InitTypeRatio()
 
 void ALumiNewGameGameModeBase::InitSystemSkillData()
 {
-	gameUtility->SystemSkillData.Empty();
+	/*gameUtility->SystemSkillData.Empty();
 	if (UReadImportData::ImportAllSkillData(gameUtility->SystemSkillData))
 	{
 
-	}
+	}*/
 }
 
 void ALumiNewGameGameModeBase::AddGameScore(int _score)

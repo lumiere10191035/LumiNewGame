@@ -67,21 +67,21 @@ void APointNPC::AttachStaticMesh(FString path)
 	}
 }
 
-void APointNPC::UpdateInitData(float _Radius, float _Size, int _Score, int _Exp, FString _path)
+void APointNPC::UpdateInitData(const FPointObjData& _data)
 {
-	AttachStaticMesh(_path);
+	AttachStaticMesh(_data.Path);
 
-	Score = _Score;
-	Exp = _Exp;
+	Score = _data.Score;
+	Exp = _data.Exp;
 	if (ProxSphere != nullptr)
 	{
-		ProxSphere->SetWorldScale3D(FVector(_Size));
-		ProxSphere->SetSphereRadius(_Radius);
+		ProxSphere->SetWorldScale3D(FVector(_data.Size));
+		ProxSphere->SetSphereRadius(_data.Radius);
 	}
 
 	if (StaticMeshComp != nullptr)
 	{
-		StaticMeshComp->SetWorldScale3D(FVector(_Size));
+		StaticMeshComp->SetWorldScale3D(FVector(_data.Size));
 	}
 }
 

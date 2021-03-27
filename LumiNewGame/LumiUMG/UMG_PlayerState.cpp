@@ -64,7 +64,7 @@ void UUMG_PlayerState::NativeConstruct()
 	lumiGameMode->lifeDelegate.BindUFunction(this, "LifeChange");
 	lumiGameMode->MagicDelegate.BindUFunction(this, "MagicChange");
 	lumiGameMode->updateStateDelegate.BindUFunction(this, "UpdateState");
-	lumiGameMode->ExpDelegate.BindUFunction(this, "ExpChange");
+	lumiGameMode->UIExpDelegate.BindUFunction(this, "ExpChange");
 	// Execute initial UMG
 	lumiGameMode->updateRequest.ExecuteIfBound();
 }

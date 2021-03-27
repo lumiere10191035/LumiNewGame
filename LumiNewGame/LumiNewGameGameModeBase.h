@@ -9,6 +9,7 @@
 #include "LumiCameraThird.h"
 #include "Kismet/GameplayStatics.h"
 #include "LumiUtility.h"
+#include "LumiEnemyController.h"
 #include "LumiNewGameGameModeBase.generated.h"
 
 DECLARE_DELEGATE_OneParam(FLifeChange, int)
@@ -60,17 +61,26 @@ public:
 	UFUNCTION()
 	void ShowExitGameUMG();
 
+	UPROPERTY(EditAnywhere, Category = Projectile)
+	TArray<TSubclassOf<class ALumiEnemyUnit>> LumiEnemyClassList;
+	UPROPERTY(EditAnywhere, Category = Projectile)
+	TArray<TSubclassOf<class APointNPC>> LumiPointClassList;
+
 	void SetBGameExitShow(bool b);
 	bool GetBGameExitShow() { return bGameExitShow; }
 
 	LumiUtility* gameUtility;
+	LumiEnemyController* enemyController;
 
 protected:
 	virtual void BeginPlay() override;
 
+	void SavePointObjPos();
 	void InitGamePointObj();
 	void InitTypeRatio();
 	void InitSystemSkillData();
+	void InitEnemyControllerData();
+	void InitGameEnemy();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UMG Game")
 	TSubclassOf<UUserWidget> StartingWidgetClass;
@@ -88,6 +98,7 @@ protected:
 	// game time;
 	float GameTime = 120.f;
 	int TargetScore = 100;
+	int PointObjNum = 0;
 	int64 GameEndTime;
 	float TimeCount = 0.f;
 	FTimerHandle timerHandle;
@@ -99,7 +110,10 @@ public:
 	// GameUtility
 	bool CreateNewUserUMG(FString path);
 	AActor* CreateNewActorByBP(FString path);
+	bool CreateNewEnemyUnit(int _num);
 	bool GetSkillDataById(FSkillData& _skillData, int _skillId);
+	float GetSkillDamageRatio(int _typeAtk, int _typeDef);
+	bool CreateNewPointUnit();
 
 	UPROPERTY(VisibleAnywhere)
 	ALumiCameraThird* LumiCameraActor;
@@ -107,7 +121,7 @@ public:
 public:
 	FLifeChange lifeDelegate;
 	FMagicChange MagicDelegate;
-	FExpChange ExpDelegate;
+	FExpChange UIExpDelegate;
 	FStateUpdate updateStateDelegate;
 	FNoParamDelegate updateRequest;
 	FAddCharaExp charaExpDelegate;

@@ -20,6 +20,7 @@ ALumiSkillBullet::ALumiSkillBullet()
 		SkillSphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereMesh"));
 		SkillSphereComp->SetupAttachment(RootComponent);
 		SkillSphereComp->OnComponentHit.__Internal_AddDynamic(this, &ALumiSkillBullet::OnHit, "OnHit");
+		SkillSphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 	if (!SkillMesh)
 	{
@@ -55,46 +56,71 @@ void ALumiSkillBullet::Tick(float DeltaTime)
 	{
 		DestroyBullet();
 	}
+
+	// wait time
+	if (curWaitTime > -1.f)
+	{
+		curWaitTime += DeltaTime;
+		if (curWaitTime >= WaitTime)
+		{
+			moveComponent->Velocity = direction * moveComponent->InitialSpeed;
+
+			curWaitTime = -1;
+		}
+	}
 }
 
-void ALumiSkillBullet::InitSkillSphereInfo(int skill_id)
+void ALumiSkillBullet::InitSkillSphereInfo(const FSkillData& _data, int _charaAtk, int _num)
 {
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
 
-	FSkillData data;
+	/*FSkillData data;
 	if (!lumiGameMode->GetSkillDataById(data, skill_id))
-		return;
+		return;*/
 
 	if (SkillSphereComp)
 	{
-		SkillSphereComp->InitSphereRadius(data.BallRadius);
+		SkillSphereComp->InitSphereRadius(_data.BallRadius);
 	}
 	if (SkillMesh)
 	{
-		SkillMesh->SetRelativeScale3D(FVector(0.1f));
+		float scale = _data.BallRadius / 32.f * 0.1f;
+		SkillMesh->SetRelativeScale3D(FVector(scale));
 	}
 	if (moveComponent)
 	{
-		moveComponent->InitialSpeed = data.BallSpeed;
-		moveComponent->MaxSpeed = data.BallSpeed;
+		moveComponent->InitialSpeed = _data.BallSpeed;
+		moveComponent->MaxSpeed = _data.BallSpeed;
 		moveComponent->bRotationFollowsVelocity = true;
 		moveComponent->bShouldBounce = false;
-		moveComponent->ProjectileGravityScale = 0.0f;
+		moveComponent->ProjectileGravityScale = 0.f;
 
-		bulletLife = data.BallTime;
-		SkillDamage = data.Damage;
-		SkillType = data.SkillType;
+		bulletLife = _data.BallTime;
+		SkillDamage = _data.Damage;
+		SkillType = _data.SkillType;
+		CharaATK = _charaAtk;
+
+		float startWaitTime = _data.StartWait;
+		float singleWaitTime = _data.SingleWait;
+		WaitTime = startWaitTime + (_num - 1) * singleWaitTime;
+		curWaitTime = 0.f;
+
+		moveComponent->Velocity = FVector::ZeroVector;
 	}
 }
 
 void ALumiSkillBullet::FireInDirection(const FVector& _direction)
 {
-	moveComponent->Velocity = _direction * moveComponent->InitialSpeed;
+	direction = _direction;
+	//moveComponent->Velocity = _direction * moveComponent->InitialSpeed;
 }
 
 void ALumiSkillBullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (Cast<ALumiSkillBullet>(OtherActor) != nullptr)
+		return;
+
 	if (OtherActor != this)
 	{
 		if (Cast<ALumiEnemyUnit>(OtherActor) != nullptr)
@@ -102,7 +128,7 @@ void ALumiSkillBullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAct
 			// Hit Enemy
 			int damage = 10;
 			ALumiEnemyUnit* enemy = Cast<ALumiEnemyUnit>(OtherActor);
-			enemy->GetDamageBySkill(SkillDamage);
+			enemy->GetDamageBySkill(SkillType, SkillDamage + CharaATK);
 		}	
 	}
 	DestroyBullet();

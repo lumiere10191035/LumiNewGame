@@ -33,7 +33,7 @@ public:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
-	void InitSkillSphereInfo(int skill_id);
+	void InitSkillSphereInfo(const FSkillData& _data, int _charaAtk, int _num);
 	void FireInDirection(const FVector& _direction);
 
 	UPROPERTY(VisibleDefaultsOnly, Category = SkillSphere)
@@ -50,4 +50,10 @@ protected:
 	float bulletCurLife;
 	int SkillDamage;
 	int SkillType;
+	int CharaATK;
+
+	float WaitTime;
+	float curWaitTime;
+
+	FVector direction;
 };

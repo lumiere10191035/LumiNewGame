@@ -2,6 +2,7 @@
 
 
 #include "LumiEnemyUnit.h"
+#include "LumiNewGameGameModeBase.h"
 
 // Sets default values
 ALumiEnemyUnit::ALumiEnemyUnit()
@@ -24,8 +25,6 @@ ALumiEnemyUnit::ALumiEnemyUnit()
 	BodyMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
 	BodyMeshComp->SetupAttachment(CollisionComponent);
 	BodyMeshComp->SetRelativeLocation(FVector(0.f));
-
-	LifePoint = 1000;
 }
 
 // Called when the game starts or when spawned
@@ -42,23 +41,36 @@ void ALumiEnemyUnit::Tick(float DeltaTime)
 
 }
 
-// Called to bind functionality to input
-void ALumiEnemyUnit::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ALumiEnemyUnit::GetDamageBySkill(int _type, int _damage)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-
-void ALumiEnemyUnit::GetDamageBySkill(int _damage)
-{
-	LifePoint -= _damage;
+	ALumiNewGameGameModeBase* gameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
+	float damageRatio = gameMode->GetSkillDamageRatio(_type, unitStatus.enemyType);
+	damageRatio = damageRatio == 0 ? 1 : damageRatio;
+	int trueDamage = FMath::FloorToInt((float)_damage / damageRatio);
+	unitStatus.curHp -= trueDamage;
 	
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Enemy cur HP: %d"), LifePoint));
-
-	if (LifePoint <= 0)
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Log::Enemy Damage %d"), trueDamage > unitStatus.curHp ? unitStatus.curHp : trueDamage));
+	if (unitStatus.curHp <= 0)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("Enemy Die!"));
+		gameMode->charaExpDelegate.ExecuteIfBound(unitStatus.UnitExp);
+		gameMode->scoreDelegate.ExecuteIfBound(unitStatus.UnitScore);
+
 		Destroy();
 	}
 }
 
+void ALumiEnemyUnit::InitEnemyUnit(const FEnemyData& _data)
+{
+	unitStatus.MaxHp = _data.HP;
+	unitStatus.curHp = unitStatus.MaxHp;
+	unitStatus.MaxMp = _data.MP;
+	unitStatus.curMp = unitStatus.MaxMp;
+	unitStatus.MaxSpeed = _data.Speed;
+	unitStatus.curSpeed = 0.f;
+	unitStatus.skill_Id = _data.Skill_Id;
+	unitStatus.MaxMoveTime = _data.MoveTime;
+	unitStatus.curMoveTime = 0.f;
+	unitStatus.AlarmDis = _data.AlarmDistance;
+	unitStatus.UnitExp = _data.UnitExp;
+}

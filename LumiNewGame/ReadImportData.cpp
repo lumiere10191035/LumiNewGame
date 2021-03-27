@@ -47,14 +47,13 @@ bool UReadImportData::ImportLevelData(FLumiLevelData& Data, int Level)
 	return ret;
 }
 
-bool UReadImportData::ImportPointObj(TArray<FPointObjData>& DataList, TArray<FString>& NameList)
+bool UReadImportData::ImportPointObj(TArray<FPointObjData>& DataList)
 {
 	bool ret = false;
 	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/LumiPointObject.LumiPointObject'"));
 	FString ContextString;
 	TArray<FName> RowNames;
 	DataList.Empty();
-	NameList.Empty();
 	RowNames = pDataTable->GetRowNames();
 	for (auto name : RowNames)
 	{
@@ -64,7 +63,6 @@ bool UReadImportData::ImportPointObj(TArray<FPointObjData>& DataList, TArray<FSt
 		{
 			FPointObjData data = *tempData;
 			DataList.Emplace(*tempData);
-			NameList.Emplace(name.ToString());
 			ret = true;
 		}
 	}
@@ -135,7 +133,7 @@ bool UReadImportData::ImportGameParam(FLumiGameParam& CharaSkill)
 	return ret;
 }
 
-bool UReadImportData::ImportAllSkillData(TMap<int, FSkillData>& _SkillList)
+bool UReadImportData::ImportAllSkillData(TArray<FSkillData>& _SkillList)
 {
 	bool ret = false;
 	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/SkillData.SkillData'"));
@@ -149,11 +147,54 @@ bool UReadImportData::ImportAllSkillData(TMap<int, FSkillData>& _SkillList)
 		FSkillData* tempData = pDataTable->FindRow<FSkillData>(name, ContextString);
 		if (tempData != nullptr)
 		{
-			FSkillData data = *tempData;
-			_SkillList.Emplace(data.Skill_Id, *tempData);
+			_SkillList.Emplace(*tempData);
 			ret = true;
 		}
 	}
 
 	return ret;
 }
+
+bool UReadImportData::ImportAllEnemyData(TArray<FEnemyData>& EnemyList)
+{
+	bool ret = false;
+	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/EnemyData.EnemyData'"));
+	FString ContextString;
+	TArray<FName> RowNames;
+	EnemyList.Empty();
+	RowNames = pDataTable->GetRowNames();
+	for (auto name : RowNames)
+	{
+
+		FEnemyData* tempData = pDataTable->FindRow<FEnemyData>(name, ContextString);
+		if (tempData != nullptr)
+		{
+			EnemyList.Emplace(*tempData);
+			ret = true;
+		}
+	}
+	return ret;
+}
+
+bool UReadImportData::ImportAllPointPosData(TArray<FPointPosSet>& _posList)
+{
+	bool ret = false;
+	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/PointPosSet.PointPosSet'"));
+	FString ContextString;
+	TArray<FName> RowNames;
+	_posList.Empty();
+	RowNames = pDataTable->GetRowNames();
+	for (auto name : RowNames)
+	{
+
+		FPointPosSet* tempData = pDataTable->FindRow<FPointPosSet>(name, ContextString);
+		if (tempData != nullptr)
+		{
+			_posList.Emplace(*tempData);
+			ret = true;
+		}
+	}
+	return ret;
+}
+
+

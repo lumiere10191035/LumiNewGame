@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Components/SphereComponent.h"
+#include "ReadImportData.h"
 #include "PointNPC.generated.h"
 
 UCLASS()
@@ -32,7 +33,7 @@ public:
 	void OnStartOverlap(UPrimitiveComponent* OverlapppedComp, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool bFromSweep, const FHitResult& sweepResult);
 
 	void AttachStaticMesh(FString path);
-	void UpdateInitData(float _Radius, float _Size, int _Score, int _Exp, FString _path);
+	void UpdateInitData(const FPointObjData& _data);
 
 	//Point Mesh
 	UPROPERTY(EditAnywhere)

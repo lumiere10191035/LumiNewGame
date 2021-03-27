@@ -45,6 +45,9 @@ ALumiCharacter::ALumiCharacter()
 	lumiStatus.curHP = lumiStatus.maxHP;
 	lumiStatus.curMP = lumiStatus.maxMP;
 	lumiStatus.curExp = 0;
+
+	MPRecoverCount = 0.f;
+	HPRecoverCount = 0.f;
 }
 
 // Called when the game starts or when spawned
@@ -73,8 +76,29 @@ void ALumiCharacter::BeginPlay()
 
 		DisappearTime = charaParam.DisappearTime;
 		CurHideTime = 0.f;
+		StaticCoolTime = charaParam.StaticCoolTime;
+		CurStaticCoolTime = -1;
 
 		boostState = BOOST_HIDE;
+	}
+
+	TArray<FSkillData> allSkillData;
+	if (UReadImportData::ImportAllSkillData(allSkillData))
+	{
+		lumiSkillList.Empty();
+		for (auto data : allSkillData)
+		{
+			LumiSkillStruct newSkill;
+			newSkill.skillData = data;
+			newSkill.bUnlock = data.UnlockLevel <= CharacterLevel;
+			newSkill.skillId = data.Skill_Id;
+			newSkill.skillDamage = data.Damage;
+			newSkill.curCoolTime = -1;
+			lumiSkillList.Emplace(newSkill);
+		}
+		lumiSkillList.Sort([](const LumiSkillStruct& a, const LumiSkillStruct& b) {
+			return a.skillId < b.skillId;
+		});
 	}
 
 	FLumiSkill skillParam;
@@ -187,10 +211,6 @@ void ALumiCharacter::Tick(float DeltaTime)
 
 			characterMove->MaxWalkSpeed = currentSpeed;
 			AddMovementInput(NewDirection, 1.f);
-			//FVector DirectionX = FRotationMatrix(Controller->GetControlRotation()).GetScaledAxis(EAxis::X);
-			//AddMovementInput(DirectionX, MoveDirect.X);
-			//FVector DirectionY = FRotationMatrix(Controller->GetControlRotation()).GetScaledAxis(EAxis::Y);
-			//AddMovementInput(DirectionY, MoveDirect.Y);
 
 			// move camera;
 			lumiGameMode->LumiCameraActor->SetActorLocation(GetActorLocation());
@@ -201,30 +221,49 @@ void ALumiCharacter::Tick(float DeltaTime)
 	}
 
 	{
-		// skill cool down
-		for (auto& a : SkillCoolTimeList)
+		//Static cool down
+		if (CurStaticCoolTime > -1)
 		{
-			if (SkillInCoolTime.Contains(a.Key))
+			// in cool time
+			CurStaticCoolTime += DeltaTime;
+			if (CurStaticCoolTime >= StaticCoolTime)
 			{
-				if (SkillInCoolTime[a.Key])
-				{
-					if (a.Value > -1)
-					{
-						a.Value += DeltaTime;
-						if (MaxSkillCoolTime.Contains(a.Key))
-						{
-							if (a.Value >= MaxSkillCoolTime[a.Key])
-							{
-								a.Value = -1;
-								SkillInCoolTime.Emplace(a.Key, 0);
-							}
-						}
-					}
-				}
-				
+				CurStaticCoolTime = -1.f;
 			}
-			else {
-				SkillInCoolTime.Emplace(a.Key, 1);
+		}
+
+		// skill cool down
+		for (auto& a : lumiSkillList)
+		{
+			if (a.curCoolTime > -1.f)
+			{
+				a.curCoolTime += DeltaTime;
+				FSkillData data = a.skillData;
+				if (a.curCoolTime >= data.CoolTime)
+				{
+					a.curCoolTime = -1;
+				}
+			}
+		}
+	}
+
+	{
+		//MP recover
+		if (lumiStatus.curMP == lumiStatus.maxMP)
+		{
+			if (MPRecoverCount > 0.f)
+			{
+				MPRecoverCount = 0.f;
+			}
+			// donothing;
+		}
+		else
+		{
+			MPRecoverCount += DeltaTime;
+			if (MPRecoverCount >= RECOVER_TIME)
+			{
+				MagicChange(lumiStatus.MPRecover);
+				MPRecoverCount = 0.f;
 			}
 		}
 	}
@@ -251,7 +290,13 @@ void ALumiCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Flash", IE_Pressed, this, &ALumiCharacter::LumiFlash);
 	PlayerInputComponent->BindAction("ExitGame", IE_Pressed, this, &ALumiCharacter::ExitGameOption);
 
-	PlayerInputComponent->BindAction("Shoot", IE_Pressed, this, &ALumiCharacter::TestSkillShoot);
+	// Skill
+	PlayerInputComponent->BindAction("NormalAttack", IE_Pressed, this, &ALumiCharacter::SkillNormal);
+	PlayerInputComponent->BindAction("Skill1", IE_Pressed, this, &ALumiCharacter::SkillFirst);
+	PlayerInputComponent->BindAction("Skill2", IE_Pressed, this, &ALumiCharacter::SkillSecond);
+	PlayerInputComponent->BindAction("Skill3", IE_Pressed, this, &ALumiCharacter::SkillThird);
+
+	//PlayerInputComponent->BindAction("Shoot", IE_Pressed, this, &ALumiCharacter::TestSkillShoot);
 }
 
 void ALumiCharacter::ExitGameOption()
@@ -402,36 +447,31 @@ void ALumiCharacter::AddCharacterExp(int Value)
 	}
 
 	int newExp = lumiStatus.curExp + Value;
+
 	if (newExp >= lumiStatus.maxExp)
 	{
-		CharacterLevel += 1;
-
-		FLumiLevelData data;
-		if (UReadImportData::ImportLevelData(data, CharacterLevel))
+		while (newExp >= lumiStatus.maxExp)
 		{
+			CharacterLevel += 1;
+			newExp -= lumiStatus.maxExp;
+			lumiStatus.curExp = newExp;
+
+			DoLevelUp();
+
 			lumiStatus.curExp = CharacterLevel == MAX_CHARACTER_LEVEL ? 0 :
 				newExp - lumiStatus.maxExp;
-
-			int deltaHP = data.MaxHP - lumiStatus.maxHP;
-			int deltaMP = data.MaxMP - lumiStatus.maxMP;
-			lumiStatus.maxHP = data.MaxHP;
-			lumiStatus.maxMP = data.MaxMP;
-			lumiStatus.maxExp = data.NeedExp;
-
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("LevelUp HPChagne:from %d to %d"), lumiStatus.curHP, deltaHP));
-
-			lumiStatus.curHP += deltaHP;
-			lumiStatus.curMP += deltaMP;
-
-			UpdateStatusShow();
+			if (CharacterLevel == MAX_CHARACTER_LEVEL)
+				break;
 		}
+
+		UpdateStatusShow();
 	}
 	else
 	{
 		lumiStatus.curExp = newExp;
 		ALumiNewGameGameModeBase* lumiGameMode;
 		lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
-		lumiGameMode->ExpDelegate.ExecuteIfBound(lumiStatus.curExp);
+		lumiGameMode->UIExpDelegate.ExecuteIfBound(lumiStatus.curExp);
 	}
 }
 
@@ -449,6 +489,9 @@ void ALumiCharacter::ResetCharacterExpTest()
 		lumiStatus.maxHP = data.MaxHP;
 		lumiStatus.maxMP = data.MaxMP;
 		lumiStatus.maxExp = data.NeedExp;
+
+		lumiStatus.HPRecover = data.HPRecover;
+		lumiStatus.MPRecover = data.MPRecover;
 	}
 	lumiStatus.curHP = FMath::Clamp(lumiStatus.curHP, 0, lumiStatus.maxHP);
 	lumiStatus.curMP = FMath::Clamp(lumiStatus.curMP, 0, lumiStatus.maxMP);
@@ -465,6 +508,10 @@ void ALumiCharacter::UpdateCharacterStatus()
 		lumiStatus.maxHP = data.MaxHP;
 		lumiStatus.maxMP = data.MaxMP;
 		lumiStatus.maxExp = data.NeedExp;
+		lumiStatus.ATK = data.ATK;
+		lumiStatus.DEF = data.DEF;
+		lumiStatus.HPRecover = data.HPRecover;
+		lumiStatus.MPRecover = data.MPRecover;
 	}
 }
 
@@ -493,58 +540,94 @@ void ALumiCharacter::UpdateBoostShow()
 	lumiGameMode->updateBoostDelegate.ExecuteIfBound(BoostMax == 0.f ? 1.f : BoostCur / BoostMax, boostState != BOOST_HIDE);
 }
 
-/////////////
-void ALumiCharacter::TestSkillShoot()
+void ALumiCharacter::SkillNormal()
+{
+	int skillId = 4;
+	SkillShoot(skillId);
+}
+
+void ALumiCharacter::SkillFirst()
 {
 	int skillId = 1;
+	SkillShoot(skillId);
+}
 
-	if (!CheckSkillEnabled(skillId))
+void ALumiCharacter::SkillSecond()
+{
+	int skillId = 2;
+	SkillShoot(skillId);
+}
+
+void ALumiCharacter::SkillThird()
+{
+	int skillId = 3;
+	SkillShoot(skillId);
+}
+
+/////////////
+void ALumiCharacter::SkillShoot(int _skillId)
+{
+	if (!CheckSkillEnabled(_skillId))
 	{
 		return;
 	}
+
+	CurStaticCoolTime = 0.f;
 
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
-	FSkillData data;
-	if (!lumiGameMode->GetSkillDataById(data, skillId))
+
+	
+	if (!(lumiSkillList.Num() >= _skillId))
 	{
 		return;
 	}
+	LumiSkillStruct& curSkill = lumiSkillList[_skillId - 1];
+	FSkillData data = curSkill.skillData;
 
-	SkillInCoolTime.Emplace(skillId, 1);
-	SkillCoolTimeList.Emplace(skillId, 0.f);
-	if (!MaxSkillCoolTime.Contains(skillId))
-	{
-		MaxSkillCoolTime.Emplace(skillId, data.CoolTime);
-	}
+	curSkill.curCoolTime = 0.f;
+	//SkillInCoolTime.Emplace(_skillId, 1);
+	//SkillCoolTimeList.Emplace(_skillId, 0.f);
+	//if (!MaxSkillCoolTime.Contains(_skillId))
+	//{
+	//	MaxSkillCoolTime.Emplace(_skillId, data.CoolTime);
+	//}
+
+	// MP cost
+	MagicChange(-data.MPCost);
 
 	FVector StartVector = GetActorLocation() + FVector(0.f, 0.f, 180.f);
 	FRotator BulletRotation = lumiGameMode->LumiCameraActor->GetSpringArmRotation();
 
-	FVector MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(100.f, 0.f, 0.f));
+	FVector MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(50.f, 0.f, 0.f));
 	FRotator MuzzleRotation = BulletRotation;
 	MuzzleRotation.Pitch += 10.f;
 
+	TSubclassOf<class ALumiSkillBullet> LumiBulletClass = LumiBulletClassList[_skillId - 1];
 	if (LumiBulletClass)
 	{
 		switch (data.BallNum)
 		{
 		case 1:
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 1);
 			break;
 		case 3:
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
-			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(100.f, -50.f, -50.f));
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
-			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(100.f, 50.f, -50.f));
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 2);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(50.f, -20.f, -20.f));
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 1);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(50.f, 20.f, -20.f));
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 3);
 			break;
 		case 5:
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
-			LuanchBallSkill(skillId, data.SkillType, MuzzleLocation, MuzzleRotation);
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 3);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(50.f, -20.f, -20.f));
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 2);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(50.f, 20.f, -20.f));
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 4);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(50.f, -30.f, -20.f));
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 1);
+			MuzzleLocation = StartVector + FTransform(BulletRotation).TransformVector(FVector(50.f, 30.f, -20.f));
+			LaunchBallSkill(data, MuzzleLocation, MuzzleRotation, 5);
 			break;
 		default:
 			break;
@@ -552,8 +635,9 @@ void ALumiCharacter::TestSkillShoot()
 	}
 }
 
-void ALumiCharacter::LuanchBallSkill(int skillId, int skillType, FVector startLocation, FRotator startRotation)
+void ALumiCharacter::LaunchBallSkill(const FSkillData& _data, FVector startLocation, FRotator startRotation, int num)
 {
+	TSubclassOf<class ALumiSkillBullet> LumiBulletClass = LumiBulletClassList[_data.Skill_Id - 1];
 	if (LumiBulletClass)
 	{
 		FActorSpawnParameters spawnParams;
@@ -562,7 +646,7 @@ void ALumiCharacter::LuanchBallSkill(int skillId, int skillType, FVector startLo
 		ALumiSkillBullet* bullet = GetWorld()->SpawnActor<ALumiSkillBullet>(LumiBulletClass, startLocation, startRotation, spawnParams);
 		if (bullet)
 		{
-			bullet->InitSkillSphereInfo(skillId);
+			bullet->InitSkillSphereInfo(_data, lumiStatus.ATK, num);
 			bullet->FireInDirection(startRotation.Vector());
 		}
 	}
@@ -573,15 +657,19 @@ bool ALumiCharacter::CheckSkillEnabled(int skillId)
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
 
-	FSkillData data;
-	if (!lumiGameMode->GetSkillDataById(data, skillId))
+	if (!(lumiSkillList.Num() >= skillId))
 	{
-		check(GEngine != nullptr);
-		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, FString::Printf(TEXT("SkillID = %d, No skill"), skillId));
+		return false;
+	}
+	LumiSkillStruct& skill = lumiSkillList[skillId - 1];
+	const FSkillData& data = skill.skillData;
+
+	if (!skill.bUnlock)
+	{
 
 		return false;
 	}
-	
+
 	// check mp
 	if (lumiStatus.curMP < data.MPCost)
 	{
@@ -592,7 +680,15 @@ bool ALumiCharacter::CheckSkillEnabled(int skillId)
 	}
 
 	// cool down
-	if (SkillInCoolTime.Contains(skillId) && (SkillInCoolTime[skillId] == 1))
+	if (CurStaticCoolTime > -1.f)
+	{
+		check(GEngine != nullptr);
+		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, FString::Printf(TEXT("SkillID = %d, Is In Static Cool Time"), skillId));
+
+		return false;
+	}
+
+	if (skill.curCoolTime > -1.f)
 	{
 		check(GEngine != nullptr);
 		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, FString::Printf(TEXT("SkillID = %d, Is In Cool Time"), skillId));
@@ -601,4 +697,30 @@ bool ALumiCharacter::CheckSkillEnabled(int skillId)
 	}
 	
 	return true;
+}
+
+void ALumiCharacter::DoLevelUp()
+{
+	FLumiLevelData data;
+	if (UReadImportData::ImportLevelData(data, CharacterLevel))
+	{
+		int deltaHP = data.MaxHP - lumiStatus.maxHP;
+		int deltaMP = data.MaxMP - lumiStatus.maxMP;
+		lumiStatus.maxHP = data.MaxHP;
+		lumiStatus.maxMP = data.MaxMP;
+		lumiStatus.maxExp = data.NeedExp;
+		lumiStatus.HPRecover = data.HPRecover;
+		lumiStatus.MPRecover = data.MPRecover;
+
+		lumiStatus.curHP += deltaHP;
+		lumiStatus.curMP += deltaMP;
+		lumiStatus.ATK = data.ATK;
+		lumiStatus.DEF = data.DEF;
+	}
+	
+	// Check skill unlock
+	for (auto& skill : lumiSkillList)
+	{
+		skill.bUnlock = skill.skillData.UnlockLevel <= CharacterLevel;
+	}
 }

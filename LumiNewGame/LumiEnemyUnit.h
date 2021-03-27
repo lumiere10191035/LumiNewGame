@@ -6,7 +6,25 @@
 #include "GameFramework/Pawn.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "ReadImportData.h"
+#include "LumiUtility.h"
 #include "LumiEnemyUnit.generated.h"
+
+struct EnemyStatus {
+	GAME_SKILL_TYPE enemyType = SKILL_TYPE_DEFAULT;
+	int MaxHp = 0;
+	int curHp = 0;
+	int MaxMp = 0;
+	int curMp = 0;
+	float MaxSpeed = 0.f;
+	float curSpeed = 0.f;
+	float MaxMoveTime = 0.f;
+	float curMoveTime = 0.f;
+	int skill_Id = 0;
+	float AlarmDis = 0.f;
+	int UnitExp = 0;
+	int UnitScore = 30;
+};
 
 UCLASS()
 class LUMINEWGAME_API ALumiEnemyUnit : public APawn
@@ -25,9 +43,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	UPROPERTY(VisibleDefaultsOnly, Category = BoxCollision)
 	UBoxComponent* CollisionComponent;
 
@@ -35,8 +50,10 @@ public:
 	UStaticMeshComponent* BodyMeshComp;
 
 	UFUNCTION()
-	void GetDamageBySkill(int damage);
+	void GetDamageBySkill(int _type, int damage);
+
+	void InitEnemyUnit(const FEnemyData& _data);
 
 protected:
-	int LifePoint;
+	EnemyStatus unitStatus;
 };

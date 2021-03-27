@@ -11,6 +11,7 @@
 #include "LumiCharacter.generated.h"
 
 #define MAX_CHARACTER_LEVEL 10
+#define RECOVER_TIME 5.f
 
 struct LumiCharacterStatus {
 	int maxHP;
@@ -19,6 +20,12 @@ struct LumiCharacterStatus {
 	int curMP;
 	int maxExp;
 	int curExp;
+
+	int MPRecover;
+	int HPRecover;
+
+	int ATK;
+	int DEF;
 };
 
 struct LumiCharaFlash {
@@ -27,6 +34,16 @@ struct LumiCharaFlash {
 	float FlashCurCoolDown;
 	float FlashDistance;
 	bool FlashInCoolDown;
+};
+
+struct LumiSkillStruct {
+	FSkillData skillData;
+	bool bUnlock;
+	int skillId;
+	int skillDamage;
+
+	float curCoolTime;
+
 };
 
 enum BOOST_STATE {
@@ -103,6 +120,17 @@ public:
 	UFUNCTION()
 	void AddCharacterExp(int Value);
 
+	// skill
+	UFUNCTION()
+	void SkillNormal();
+	UFUNCTION()
+	void SkillFirst();
+	UFUNCTION()
+	void SkillSecond();
+	UFUNCTION()
+	void SkillThird();
+	
+	void SkillShoot(int _skillId);
 
 	UFUNCTION()
 	void UpdateCharacterStatus();
@@ -113,27 +141,26 @@ public:
 	UFUNCTION()
 	void CharaExpPlus(int Exp);
 
-	UFUNCTION()
-	void TestSkillShoot();
-
 	UPROPERTY(EditAnywhere)
 	float MoveSpeed;
+
+	void DoLevelUp();
 
 	FLumiImportData LevelData;
 	int CharacterLevel;
 	LumiCharacterStatus lumiStatus;
 	LumiCharaFlash skillFlash;
-	TMap<int, float> SkillCoolTimeList;
-	TMap<int, float> MaxSkillCoolTime;
-	TMap<int, int> SkillInCoolTime;
+	//TMap<int, float> SkillCoolTimeList;
+	//TMap<int, float> MaxSkillCoolTime;
+	TArray<LumiSkillStruct> lumiSkillList;
 
 	UPROPERTY(EditAnywhere, Category = Projectile)
-	TSubclassOf<class ALumiSkillBullet> LumiBulletClass;
+	TArray<TSubclassOf<class ALumiSkillBullet>> LumiBulletClassList;
 
 protected:
 	bool CheckSkillEnabled(int skillId);
 
-	void LuanchBallSkill(int skillId, int skillType, FVector startLocation, FRotator startRotation);
+	void LaunchBallSkill(const FSkillData& _data, FVector startLocation, FRotator startRotation, int num);
 
 	class UCharacterMovementComponent* characterMove;
 	UCapsuleComponent* capsuleCom;
@@ -152,5 +179,11 @@ protected:
 	float DisappearTime;
 	float CurHideTime;
 
+	float StaticCoolTime;
+	float CurStaticCoolTime;
+
 	BOOST_STATE boostState;
+
+	float MPRecoverCount;
+	float HPRecoverCount;
 };

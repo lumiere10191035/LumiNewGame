@@ -18,6 +18,8 @@ public:
 
 	TMap<int, TMap<int, float>> DamageRatio;
 	TMap<int, FSkillData> SystemSkillData;
+	TArray<FPointPosSet> PointPosList;
+	TArray<FPointObjData> PointObjDataList;
 };
 
 
