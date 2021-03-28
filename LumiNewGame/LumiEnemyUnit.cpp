@@ -73,4 +73,5 @@ void ALumiEnemyUnit::InitEnemyUnit(const FEnemyData& _data)
 	unitStatus.curMoveTime = 0.f;
 	unitStatus.AlarmDis = _data.AlarmDistance;
 	unitStatus.UnitExp = _data.UnitExp;
+	unitStatus.UnitScore = _data.UnitScore;
 }

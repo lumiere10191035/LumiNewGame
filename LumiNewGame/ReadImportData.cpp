@@ -91,20 +91,20 @@ bool UReadImportData::ImportCharaParam(FLumiCharaParam& CharaParam)
 	return ret;
 }
 
-bool UReadImportData::ImportCharaSkill(FLumiSkill& CharaSkill)
+bool UReadImportData::ImportCharaDash(FLumiDash& _dashData)
 {
 	bool ret = false;
-	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/LumiSkillFlash.LumiSkillFlash'"));
+	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/BoostUpData.BoostUpData'"));
 	FString ContextString;
 	TArray<FName> RowNames;
 	RowNames = pDataTable->GetRowNames();
 	for (auto name : RowNames)
 	{
 
-		FLumiSkill* tempData = pDataTable->FindRow<FLumiSkill>(name, ContextString);
+		FLumiDash* tempData = pDataTable->FindRow<FLumiDash>(name, ContextString);
 		if (tempData != nullptr)
 		{
-			CharaSkill = *tempData;
+			_dashData = *tempData;
 			return true;
 		}
 	}

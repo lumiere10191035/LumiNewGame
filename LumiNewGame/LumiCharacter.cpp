@@ -23,6 +23,7 @@ ALumiCharacter::ALumiCharacter()
 
 	// CharacterMovement
 	characterMove = GetCharacterMovement();
+	characterMove->MaxAcceleration = 16384.f;
 	//characterMove->bOrientRotationToMovement = true;
 	
 	/*{
@@ -79,7 +80,7 @@ void ALumiCharacter::BeginPlay()
 		StaticCoolTime = charaParam.StaticCoolTime;
 		CurStaticCoolTime = -1;
 
-		boostState = BOOST_HIDE;
+		boostBarState = BOOST_HIDE;
 	}
 
 	TArray<FSkillData> allSkillData;
@@ -101,14 +102,14 @@ void ALumiCharacter::BeginPlay()
 		});
 	}
 
-	FLumiSkill skillParam;
-	if (UReadImportData::ImportCharaSkill(skillParam))
+	FLumiDash dashParam;
+	if (UReadImportData::ImportCharaDash(dashParam))
 	{
-		skillFlash.FlashCoolDown = skillParam.ReloadTime;
-		skillFlash.FlashCost = skillParam.MPCost;
-		skillFlash.FlashCurCoolDown = 0.f;
-		skillFlash.FlashDistance = skillParam.MoveDistance;
-		skillFlash.FlashInCoolDown = false;
+		boostStatus.BoostCost = dashParam.BoostCost;
+		boostStatus.BoostTime = dashParam.MoveTime;
+		boostStatus.SpeedRatio = dashParam.SpeedUp;
+
+		boostStatus.curBoostTime = -1.f;
 	}
 }
 
@@ -122,13 +123,13 @@ void ALumiCharacter::Tick(float DeltaTime)
 	if (lumiGameMode->GetBGameExitShow())
 		return;
 
-	// Flash
-	if (skillFlash.FlashInCoolDown)
+	if (boostStatus.curBoostTime > -1.f)
 	{
-		skillFlash.FlashCurCoolDown -= DeltaTime;
-		if (skillFlash.FlashCurCoolDown <= 0.f)
+		boostStatus.curBoostTime += DeltaTime;
+		if (boostStatus.curBoostTime > boostStatus.BoostTime)
 		{
-			skillFlash.FlashInCoolDown = false;
+			boostStatus.curBoostTime = -1.f;
+			bDash = false;
 		}
 	}
 
@@ -137,32 +138,32 @@ void ALumiCharacter::Tick(float DeltaTime)
 	{
 		if (BoostCur == 0.f)
 		{
-			boostState = BOOST_REDUCE;
+			boostBarState = BOOST_REDUCE;
 			checkSpeedUp = false;
 		}
 		else
 		{
 			BoostCur = FMath::Clamp(BoostCur - BoostPer * DeltaTime, 0.f, BoostMax);
-			boostState = BOOST_REDUCE;
+			boostBarState = BOOST_REDUCE;
 
 			UpdateBoostShow();
 		}
 	}
 	else
 	{
-		switch (boostState)
+		switch (boostBarState)
 		{
 		case BOOST_HIDE:
 			break;
 		case BOOST_REDUCE:
 			if (BoostCur < BoostMax)
 			{
-				boostState = BOOST_RECOVER_WAIT;
+				boostBarState = BOOST_RECOVER_WAIT;
 				CurWaitTime = 0.f;
 			}
 			else
 			{
-				boostState = BOOST_HIDE_WAIT;
+				boostBarState = BOOST_HIDE_WAIT;
 				CurHideTime = 0.f;
 			}
 			break;
@@ -170,7 +171,7 @@ void ALumiCharacter::Tick(float DeltaTime)
 			CurHideTime += DeltaTime;
 			if (CurHideTime >= DisappearTime)
 			{
-				boostState = BOOST_HIDE;
+				boostBarState = BOOST_HIDE;
 				UpdateBoostShow();
 				CurHideTime = 0.f;
 			}
@@ -180,7 +181,7 @@ void ALumiCharacter::Tick(float DeltaTime)
 			if (BoostCur >= BoostMax)
 			{
 				BoostCur = BoostMax;
-				boostState = BOOST_HIDE_WAIT;
+				boostBarState = BOOST_HIDE_WAIT;
 				CurHideTime = 0.f;
 			}
 			UpdateBoostShow();
@@ -190,19 +191,25 @@ void ALumiCharacter::Tick(float DeltaTime)
 			if (CurWaitTime >= WaitTime)
 			{
 				CurWaitTime = 0.f;
-				boostState = BOOST_RECOVER;
+				boostBarState = BOOST_RECOVER;
 			}
 			break;
 		default:
 			break;
 		}
 	}
+	if (bDash)
+	{
+		boostBarState = BOOST_RECOVER_WAIT;
+		CurWaitTime = 0.f;
+	}
 
 	{
 		if (!MoveDirect.IsZero())
 		{
-			float currentSpeed = checkSpeedUp ? MoveSpeed * 2.f : MoveSpeed;
-			
+			float currentRatio = bDash ? boostStatus.SpeedRatio :
+				(checkSpeedUp ? 2.f : 1.f);
+			float currentSpeed = MoveSpeed * currentRatio;
 			//calculate true direction by camera;
 			FRotator cameraRotator = lumiGameMode->LumiCameraActor->GetSpringArmRotation();
 
@@ -229,6 +236,7 @@ void ALumiCharacter::Tick(float DeltaTime)
 			if (CurStaticCoolTime >= StaticCoolTime)
 			{
 				CurStaticCoolTime = -1.f;
+				lumiGameMode->updateSkillListDelegate.ExecuteIfBound();
 			}
 		}
 
@@ -242,6 +250,7 @@ void ALumiCharacter::Tick(float DeltaTime)
 				if (a.curCoolTime >= data.CoolTime)
 				{
 					a.curCoolTime = -1;
+					lumiGameMode->updateSingleIconDelegate.ExecuteIfBound(data.Skill_Id);
 				}
 			}
 		}
@@ -346,36 +355,27 @@ void ALumiCharacter::LookHorizon(float Value)
 
 void ALumiCharacter::LumiFlash()
 {
+	if (bDash)
+		return;
+
+	//boost
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
 	if (lumiGameMode->GetBGameExitShow())
 		return;
 
-	if (skillFlash.FlashInCoolDown)
+	if (BoostCur < boostStatus.BoostCost)
 	{
 		check(GEngine != nullptr);
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Can't use Flash, because it is now in cooldown!"));
-		return;
-	}
-
-	if (lumiStatus.curMP < skillFlash.FlashCost)
-	{
-		check(GEngine != nullptr);
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Can't use Flash, because MP isn't enough!!"));
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Can't use Flash, because BoostBar isn't enough!!"));
 		return;
 	}
 	
-	skillFlash.FlashInCoolDown = true;
-	skillFlash.FlashCurCoolDown = skillFlash.FlashCoolDown;
-	MagicChange(-skillFlash.FlashCost);
-
-	// Move Character;
-	FVector FlashDirection = GetActorForwardVector();
-	FlashDirection.Z = 0.f;
-	FVector NewLocation = GetActorLocation() + FlashDirection.GetSafeNormal() * skillFlash.FlashDistance;
-	SetActorLocation(NewLocation);
-
-	lumiGameMode->LumiCameraActor->SetActorLocation(NewLocation);
+	bDash = true;
+	boostStatus.curBoostTime = 0.f;
+	bSpeedUp = false;
+	BoostCur -= boostStatus.BoostCost;
+	UpdateBoostShow();
 }
 
 void ALumiCharacter::SpeedUp()
@@ -383,7 +383,14 @@ void ALumiCharacter::SpeedUp()
 	check(GEngine != nullptr);
 	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, "Get SpeedUp");
 
-	bSpeedUp = true;
+	if (bDash)
+	{
+		// donothing
+	}
+	else
+	{
+		bSpeedUp = true;
+	}
 }
 
 void ALumiCharacter::NoSpeedUp()
@@ -537,30 +544,30 @@ void ALumiCharacter::UpdateBoostShow()
 {
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
-	lumiGameMode->updateBoostDelegate.ExecuteIfBound(BoostMax == 0.f ? 1.f : BoostCur / BoostMax, boostState != BOOST_HIDE);
+	lumiGameMode->updateBoostDelegate.ExecuteIfBound(BoostMax == 0.f ? 1.f : BoostCur / BoostMax, boostBarState != BOOST_HIDE);
 }
 
 void ALumiCharacter::SkillNormal()
-{
-	int skillId = 4;
-	SkillShoot(skillId);
-}
-
-void ALumiCharacter::SkillFirst()
 {
 	int skillId = 1;
 	SkillShoot(skillId);
 }
 
-void ALumiCharacter::SkillSecond()
+void ALumiCharacter::SkillFirst()
 {
 	int skillId = 2;
 	SkillShoot(skillId);
 }
 
-void ALumiCharacter::SkillThird()
+void ALumiCharacter::SkillSecond()
 {
 	int skillId = 3;
+	SkillShoot(skillId);
+}
+
+void ALumiCharacter::SkillThird()
+{
+	int skillId = 4;
 	SkillShoot(skillId);
 }
 
@@ -586,6 +593,9 @@ void ALumiCharacter::SkillShoot(int _skillId)
 	FSkillData data = curSkill.skillData;
 
 	curSkill.curCoolTime = 0.f;
+
+	lumiGameMode->updateSkillListDelegate.ExecuteIfBound();
+
 	//SkillInCoolTime.Emplace(_skillId, 1);
 	//SkillCoolTimeList.Emplace(_skillId, 0.f);
 	//if (!MaxSkillCoolTime.Contains(_skillId))
@@ -682,9 +692,6 @@ bool ALumiCharacter::CheckSkillEnabled(int skillId)
 	// cool down
 	if (CurStaticCoolTime > -1.f)
 	{
-		check(GEngine != nullptr);
-		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, FString::Printf(TEXT("SkillID = %d, Is In Static Cool Time"), skillId));
-
 		return false;
 	}
 
@@ -723,4 +730,8 @@ void ALumiCharacter::DoLevelUp()
 	{
 		skill.bUnlock = skill.skillData.UnlockLevel <= CharacterLevel;
 	}
+
+	ALumiNewGameGameModeBase* lumiGameMode;
+	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
+	lumiGameMode->updateSkillListDelegate.ExecuteIfBound();
 }

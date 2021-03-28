@@ -91,19 +91,19 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct FLumiSkill : public FTableRowBase
+struct FLumiDash : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
 
 public:
-	FLumiSkill() : ReloadTime(0.f), MPCost(0), MoveDistance(0.f) {}
+	FLumiDash() : BoostCost(0.f), SpeedUp(0), MoveTime(0.f) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
-		float ReloadTime;
+		float BoostCost;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
-		int MPCost;
+		float SpeedUp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
-		float MoveDistance;
+		float MoveTime;
 };
 
 USTRUCT(BlueprintType)
@@ -159,6 +159,7 @@ public:
 		BallSpeed(0.f),
 		StartWait(0.f),
 		SingleWait(0.f),
+		IconName(""),
 		Blueprint("") {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
@@ -186,6 +187,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		float SingleWait;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		FString IconName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		FString Blueprint;
 };
 
@@ -200,7 +203,8 @@ public:
 				PosZ(0.f),
 				Level(0), HP(0), MP(0),
 				Skill_Id(0), EnemyType(0),
-				Speed(0.f), MoveTime(0.f), UnitExp(0),
+				Speed(0.f), MoveTime(0.f),
+				UnitScore(0), UnitExp(0),
 				AlarmDistance(0.f), Blueprint(TEXT("")){}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
@@ -230,6 +234,8 @@ public:
 		float MoveTime;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		float AlarmDistance;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		int UnitScore;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		int UnitExp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
@@ -262,7 +268,7 @@ public:
 	static bool ImportCharaParam(FLumiCharaParam& CharaParam);
 
 	UFUNCTION(BlueprintCallable, Category = Character)
-	static bool ImportCharaSkill(FLumiSkill& CharaSkill);
+	static bool ImportCharaDash(FLumiDash& _dashData);
 
 	UFUNCTION(BlueprintCallable, Category = Character)
 	static bool ImportGameParam(FLumiGameParam& GameParam);

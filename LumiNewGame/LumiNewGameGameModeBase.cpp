@@ -40,7 +40,7 @@ void ALumiNewGameGameModeBase::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidg
 			CurrentWidget->AddToViewport();
 		}
 	}
-
+	
 	if (MyWidgetInst != nullptr)
 	{
 		MyWidgetInst->RemoveFromViewport();
@@ -223,8 +223,6 @@ void ALumiNewGameGameModeBase::AddGameScore(int _score)
 		GameResultState = GAME_RESULT_WIN;
 		ShowResultWidget();
 		GetWorld()->GetTimerManager().ClearTimer(timerHandle);
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, gameSetDelegate.IsBound() ? TEXT("Yes") : TEXT("No"));
-		//gameSetDelegate.ExecuteIfBound((int)GAME_RESULT_WIN, LumiScore);
 	}
 }
 
@@ -233,7 +231,7 @@ void ALumiNewGameGameModeBase::UpdateTimer()
 	FDateTime Time = FDateTime::Now();
 	int64 Timestamp = Time.ToUnixTimestamp();
 	float RemainTime = (float)(GameEndTime - Timestamp);
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Timer:: %.0f"), RemainTime));
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("Timer:: %.0f"), RemainTime));
 	if (TimeCount >= GameTime)
 	{
 		RemainTime = 0.f;
@@ -241,8 +239,6 @@ void ALumiNewGameGameModeBase::UpdateTimer()
 		GameResultState = GAME_RESULT_TIMEUP;
 		ShowResultWidget();
 		GetWorld()->GetTimerManager().ClearTimer(timerHandle);
-
-		//gameSetDelegate.ExecuteIfBound((int)GAME_RESULT_TIMEUP, LumiScore);
 	}
 	else
 	{

@@ -23,7 +23,7 @@ struct EnemyStatus {
 	int skill_Id = 0;
 	float AlarmDis = 0.f;
 	int UnitExp = 0;
-	int UnitScore = 30;
+	int UnitScore = 0;
 };
 
 UCLASS()

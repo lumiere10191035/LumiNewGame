@@ -28,12 +28,17 @@ struct LumiCharacterStatus {
 	int DEF;
 };
 
-struct LumiCharaFlash {
-	int FlashCost;
+struct LumiCharaBoost {
+	float BoostCost;
+	float BoostTime;
+	float SpeedRatio;
+	float curBoostTime;
+
+	/*int FlashCost;
 	float FlashCoolDown;
 	float FlashCurCoolDown;
 	float FlashDistance;
-	bool FlashInCoolDown;
+	bool FlashInCoolDown;*/
 };
 
 struct LumiSkillStruct {
@@ -146,10 +151,12 @@ public:
 
 	void DoLevelUp();
 
+	float GetCurStaticCoolTimeShow() { return CurStaticCoolTime > -1 ? StaticCoolTime - CurStaticCoolTime : 0.f; }
+
 	FLumiImportData LevelData;
 	int CharacterLevel;
 	LumiCharacterStatus lumiStatus;
-	LumiCharaFlash skillFlash;
+	LumiCharaBoost boostStatus;
 	//TMap<int, float> SkillCoolTimeList;
 	//TMap<int, float> MaxSkillCoolTime;
 	TArray<LumiSkillStruct> lumiSkillList;
@@ -167,6 +174,7 @@ protected:
 	
 	FVector2D MoveDirect;
 	bool bSpeedUp;
+	bool bDash;
 
 	float BoostMax;
 	float BoostCur;
@@ -182,8 +190,10 @@ protected:
 	float StaticCoolTime;
 	float CurStaticCoolTime;
 
-	BOOST_STATE boostState;
+	BOOST_STATE boostBarState;
 
 	float MPRecoverCount;
 	float HPRecoverCount;
+
+	FTimerHandle skillTimerHandle;
 };

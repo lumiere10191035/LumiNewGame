@@ -24,6 +24,7 @@ DECLARE_DELEGATE_TwoParams(FUpdateBoost, float, bool)
 DECLARE_DELEGATE_OneParam(FUpdateTimer, float)
 DECLARE_DELEGATE_TwoParams(FGameSet, int, int)
 DECLARE_DELEGATE_OneParam(FGameTarget, int)
+DECLARE_DELEGATE_OneParam(FSingleIcon, int)
 
 /**
  * 
@@ -133,4 +134,11 @@ public:
 	FGameTarget gameTargetDelegate;
 	FNoParamDelegate gameResultInitDelegate;
 	FNoParamDelegate closeExitUMGDelegate;
+	FNoParamDelegate updateSkillListDelegate;
+	FNoParamDelegate updateSkillIconDelegate;
+	FSingleIcon updateSingleIconDelegate;
+
+	//pause/resume
+	FNoParamDelegate pauseDelegate;
+	FNoParamDelegate resumeDelegate;
 };
