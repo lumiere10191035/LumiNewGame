@@ -35,6 +35,8 @@ class LUMINEWGAME_API ALumiNewGameGameModeBase : public AGameModeBase
 	GENERATED_BODY()
 	
 public:
+	virtual void Tick(float DeltaTime) override;
+
 	UFUNCTION(BlueprintCallable, Category = "UMG Game")
 	void ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass);
 
@@ -75,6 +77,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	
 
 	void SavePointObjPos();
 	void InitGamePointObj();
@@ -82,6 +85,8 @@ protected:
 	void InitSystemSkillData();
 	void InitEnemyControllerData();
 	void InitGameEnemy();
+
+	void UpdateEnemyPate();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UMG Game")
 	TSubclassOf<UUserWidget> StartingWidgetClass;
@@ -100,6 +105,7 @@ protected:
 	float GameTime = 120.f;
 	int TargetScore = 100;
 	int PointObjNum = 0;
+	int EnemyNum = 0;
 	int64 GameEndTime;
 	float TimeCount = 0.f;
 	FTimerHandle timerHandle;

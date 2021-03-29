@@ -112,7 +112,7 @@ struct FLumiGameParam : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 
 public:
-	FLumiGameParam() : TargetScore(0), GameMaxTime(0.f), PointNum(0) {}
+	FLumiGameParam() : TargetScore(0), GameMaxTime(0.f), PointNum(0), EnemyNum(0) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		int TargetScore;
@@ -120,6 +120,8 @@ public:
 		float GameMaxTime;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		int PointNum;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		int EnemyNum;
 };
 
 USTRUCT(BlueprintType)
@@ -201,6 +203,7 @@ public:
 	FEnemyData() : PosX_1(0.f), PosX_2(0.f),
 				PosY_1(0.f), PosY_2(0.f),
 				PosZ(0.f),
+				EnemyName(TEXT("")),
 				Level(0), HP(0), MP(0),
 				Skill_Id(0), EnemyType(0),
 				Speed(0.f), MoveTime(0.f),
@@ -217,7 +220,8 @@ public:
 		float PosY_2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		float PosZ;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
+		FString EnemyName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)
 		int Level;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LumiData)

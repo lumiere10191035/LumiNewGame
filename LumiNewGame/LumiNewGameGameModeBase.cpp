@@ -24,6 +24,11 @@ void ALumiNewGameGameModeBase::BeginPlay()
 	SavePointObjPos();
 }
 
+void ALumiNewGameGameModeBase::Tick(float DeltaTime)
+{
+	//UpdateEnemyPate();
+}
+
 void ALumiNewGameGameModeBase::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass)
 {
 	if (CurrentWidget != nullptr)
@@ -69,6 +74,7 @@ void ALumiNewGameGameModeBase::InitGameParam()
 		TargetScore = gameParam.TargetScore;
 		GameTime = gameParam.GameMaxTime;
 		PointObjNum = gameParam.PointNum;
+		EnemyNum = gameParam.EnemyNum;
 
 		LumiScore = 0;
 		TimeCount = 0.f;
@@ -164,7 +170,7 @@ void ALumiNewGameGameModeBase::InitEnemyControllerData()
 
 void ALumiNewGameGameModeBase::InitGameEnemy()
 {
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < EnemyNum; i++)
 	{
 		CreateNewEnemyUnit(i);
 	}

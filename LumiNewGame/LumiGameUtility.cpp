@@ -1,6 +1,7 @@
 #include "LumiNewGameGameModeBase.h"
 #include "LumiPlayerController.h"
 #include "LumiSkillBullet.h"
+#include "LumiEnemyUnit.h"
 #include "PointNPC.h"
 
 bool ALumiNewGameGameModeBase::CreateNewUserUMG(FString path)
@@ -132,4 +133,23 @@ float ALumiNewGameGameModeBase::GetSkillDamageRatio(int _typeAtk, int _typeDef)
 		}
 	}
 	return ret;
+}
+
+void ALumiNewGameGameModeBase::UpdateEnemyPate()
+{
+	FRotator cameraRot = LumiCameraActor->GetSpringArmRotation();
+
+	TArray<AActor*> enemyList;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ALumiEnemyUnit::StaticClass(), enemyList);
+	for (auto enemy : enemyList)
+	{
+		ALumiEnemyUnit* enemyEntity = Cast<ALumiEnemyUnit>(enemy);
+		if (enemyEntity != nullptr && 
+			enemyEntity->LifeBar != nullptr &&
+			enemyEntity->bLifeBarShow)
+		{
+			FRotator newRot = FRotator(-cameraRot.Pitch, -cameraRot.Yaw, -cameraRot.Roll);
+			enemyEntity->LifeBar->SetWorldRotation(newRot);
+		}
+	}
 }

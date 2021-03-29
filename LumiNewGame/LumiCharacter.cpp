@@ -461,12 +461,10 @@ void ALumiCharacter::AddCharacterExp(int Value)
 		{
 			CharacterLevel += 1;
 			newExp -= lumiStatus.maxExp;
-			lumiStatus.curExp = newExp;
 
 			DoLevelUp();
 
-			lumiStatus.curExp = CharacterLevel == MAX_CHARACTER_LEVEL ? 0 :
-				newExp - lumiStatus.maxExp;
+			lumiStatus.curExp = CharacterLevel == MAX_CHARACTER_LEVEL ? 0 : newExp;
 			if (CharacterLevel == MAX_CHARACTER_LEVEL)
 				break;
 		}

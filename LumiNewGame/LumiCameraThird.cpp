@@ -39,7 +39,7 @@ void ALumiCameraThird::Tick(float DeltaTime)
 void ALumiCameraThird::LookUp(float Value)
 {
 	FRotator NewRotator = springArmCom->GetRelativeRotation();
-	NewRotator.Pitch = FMath::Clamp(NewRotator.Pitch - Value, -90.f, 0.f);
+	NewRotator.Pitch = FMath::Clamp(NewRotator.Pitch - Value, -75.f, 15.f);
 	springArmCom->SetRelativeRotation(NewRotator);
 }
 void ALumiCameraThird::LookHorizon(float Value)

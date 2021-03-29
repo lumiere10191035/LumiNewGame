@@ -8,6 +8,8 @@
 #include "Components/BoxComponent.h"
 #include "ReadImportData.h"
 #include "LumiUtility.h"
+#include "LumiUMG/UMG_EnemyHP.h"
+#include "Components/WidgetComponent.h"
 #include "LumiEnemyUnit.generated.h"
 
 struct EnemyStatus {
@@ -24,6 +26,7 @@ struct EnemyStatus {
 	float AlarmDis = 0.f;
 	int UnitExp = 0;
 	int UnitScore = 0;
+	FString EnemyName = TEXT("");
 };
 
 UCLASS()
@@ -53,7 +56,19 @@ public:
 	void GetDamageBySkill(int _type, int damage);
 
 	void InitEnemyUnit(const FEnemyData& _data);
+	void UpdateLifeBarRotation();
+
+	UPROPERTY(EditAnywhere, Category = LifeBar)
+	TSubclassOf<UUserWidget> LifeBarClass;
+	
+	UPROPERTY(EditAnywhere, Category = WidgetComponent)
+	UWidgetComponent* LifeBar;
+
+	bool bLifeBarShow;
+	
 
 protected:
 	EnemyStatus unitStatus;
+	float releaseTime;
+	float curReleaseTime;
 };
