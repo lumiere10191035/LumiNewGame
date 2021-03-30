@@ -20,6 +20,7 @@ public:
 	TMap<int, FSkillData> SystemSkillData;
 	TArray<FPointPosSet> PointPosList;
 	TArray<FPointObjData> PointObjDataList;
+	TArray<FSkillData> EnemySkillData;
 };
 
 

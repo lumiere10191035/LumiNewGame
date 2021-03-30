@@ -280,6 +280,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Character)
 	static bool ImportAllSkillData(TArray<FSkillData>& SkillList);
 
+	UFUNCTION(BlueprintCallable, Category = Character)
+	static bool ImportEnemySkillData(TArray<FSkillData>& EnemySkillList);
+
 	UFUNCTION(BlueprintCallable, Category = Enemy)
 	static bool ImportAllEnemyData(TArray<FEnemyData>& EnemyList);
 

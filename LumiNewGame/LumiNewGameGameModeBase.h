@@ -72,6 +72,8 @@ public:
 	void SetBGameExitShow(bool b);
 	bool GetBGameExitShow() { return bGameExitShow; }
 
+	void CharacterDie();
+
 	LumiUtility* gameUtility;
 	LumiEnemyController* enemyController;
 
@@ -124,6 +126,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	ALumiCameraThird* LumiCameraActor;
+
+	UPROPERTY(EditAnywhere, Category = Projectile)
+	TArray<TSubclassOf<class ALumiEnemyBullet>> LumiEnemyBulletClassList;
 
 public:
 	FLifeChange lifeDelegate;

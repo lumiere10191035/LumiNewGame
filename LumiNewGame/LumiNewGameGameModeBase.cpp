@@ -217,6 +217,19 @@ void ALumiNewGameGameModeBase::InitSystemSkillData()
 	{
 
 	}*/
+
+	gameUtility->EnemySkillData.Empty();
+	if (UReadImportData::ImportEnemySkillData(gameUtility->EnemySkillData))
+	{
+
+	}
+}
+
+void ALumiNewGameGameModeBase::CharacterDie()
+{
+	GameResultState = GAME_RESULT_PLAYERDEAD;
+	ShowResultWidget();
+	GetWorld()->GetTimerManager().ClearTimer(timerHandle);
 }
 
 void ALumiNewGameGameModeBase::AddGameScore(int _score)

@@ -1,14 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "LumiSkillBullet.h"
+#include "LumiEnemyBullet.h"
 #include "LumiEnemyUnit.h"
+#include "LumiCharacter.h"
 #include "LumiNewGameGameModeBase.h"
 
 // Sets default values
-ALumiSkillBullet::ALumiSkillBullet()
+ALumiEnemyBullet::ALumiEnemyBullet()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	if (RootComponent)
@@ -19,7 +20,7 @@ ALumiSkillBullet::ALumiSkillBullet()
 	{
 		SkillSphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereMesh"));
 		SkillSphereComp->SetupAttachment(RootComponent);
-		SkillSphereComp->OnComponentHit.__Internal_AddDynamic(this, &ALumiSkillBullet::OnHit, "OnHit");
+		SkillSphereComp->OnComponentHit.__Internal_AddDynamic(this, &ALumiEnemyBullet::OnHit, "OnHit");
 		SkillSphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 	if (!SkillMesh)
@@ -40,14 +41,14 @@ ALumiSkillBullet::ALumiSkillBullet()
 }
 
 // Called when the game starts or when spawned
-void ALumiSkillBullet::BeginPlay()
+void ALumiEnemyBullet::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
 // Called every frame
-void ALumiSkillBullet::Tick(float DeltaTime)
+void ALumiEnemyBullet::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -70,7 +71,7 @@ void ALumiSkillBullet::Tick(float DeltaTime)
 	}
 }
 
-void ALumiSkillBullet::InitSkillSphereInfo(const FSkillData& _data, int _charaAtk, int _num)
+void ALumiEnemyBullet::InitEnemySphereInfo(const FSkillData& _data, int _charaAtk, int _num)
 {
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
@@ -106,28 +107,26 @@ void ALumiSkillBullet::InitSkillSphereInfo(const FSkillData& _data, int _charaAt
 	}
 }
 
-void ALumiSkillBullet::FireInDirection(const FVector& _direction)
+void ALumiEnemyBullet::FireInDirection(const FVector& _direction)
 {
 	direction = _direction;
 }
 
-void ALumiSkillBullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+void ALumiEnemyBullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (OtherActor != this)
 	{
-		if (Cast<ALumiEnemyUnit>(OtherActor) != nullptr)
+		if (Cast<ALumiCharacter>(OtherActor) != nullptr)
 		{
 			// Hit Enemy
-			int damage = 10;
-			ALumiEnemyUnit* enemy = Cast<ALumiEnemyUnit>(OtherActor);
-			enemy->GetDamageBySkill(SkillType, SkillDamage + CharaATK);
-		}	
+			ALumiCharacter* character = Cast<ALumiCharacter>(OtherActor);
+			character->GetDamageByEnemy(SkillDamage + CharaATK);
+		}
 	}
 	DestroyBullet();
 }
 
-void ALumiSkillBullet::DestroyBullet()
+void ALumiEnemyBullet::DestroyBullet()
 {
 	Destroy();
 }
-

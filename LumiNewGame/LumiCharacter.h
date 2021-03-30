@@ -149,6 +149,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	float MoveSpeed;
 
+	void GetDamageByEnemy(int _damage);
 	void DoLevelUp();
 
 	float GetCurStaticCoolTimeShow() { return CurStaticCoolTime > -1 ? StaticCoolTime - CurStaticCoolTime : 0.f; }

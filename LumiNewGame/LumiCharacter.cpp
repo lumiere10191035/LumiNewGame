@@ -276,6 +276,27 @@ void ALumiCharacter::Tick(float DeltaTime)
 			}
 		}
 	}
+
+	{
+		//HP recover
+		if (lumiStatus.curHP == lumiStatus.maxHP)
+		{
+			if (HPRecoverCount > 0.f)
+			{
+				HPRecoverCount = 0.f;
+			}
+			// donothing;
+		}
+		else
+		{
+			HPRecoverCount += DeltaTime;
+			if (HPRecoverCount >= RECOVER_TIME)
+			{
+				LifeChange(lumiStatus.HPRecover);
+				HPRecoverCount = 0.f;
+			}
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -380,8 +401,8 @@ void ALumiCharacter::LumiFlash()
 
 void ALumiCharacter::SpeedUp()
 {
-	check(GEngine != nullptr);
-	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, "Get SpeedUp");
+	//check(GEngine != nullptr);
+	//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, "Get SpeedUp");
 
 	if (bDash)
 	{
@@ -420,6 +441,11 @@ void ALumiCharacter::LifeChange(int Value)
 	ALumiNewGameGameModeBase* lumiGameMode;
 	lumiGameMode = Cast<ALumiNewGameGameModeBase>(UGameplayStatics::GetGameMode(this));
 	lumiGameMode->lifeDelegate.Execute(lumiStatus.curHP);
+
+	if (lumiStatus.curHP <= 0)
+	{
+		lumiGameMode->CharacterDie();
+	}
 }
 
 void ALumiCharacter::MagicPlus()
@@ -702,6 +728,11 @@ bool ALumiCharacter::CheckSkillEnabled(int skillId)
 	}
 	
 	return true;
+}
+
+void ALumiCharacter::GetDamageByEnemy(int _damage)
+{
+	LifeChange(-_damage);
 }
 
 void ALumiCharacter::DoLevelUp()

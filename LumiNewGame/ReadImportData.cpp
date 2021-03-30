@@ -155,6 +155,28 @@ bool UReadImportData::ImportAllSkillData(TArray<FSkillData>& _SkillList)
 	return ret;
 }
 
+bool UReadImportData::ImportEnemySkillData(TArray<FSkillData>& _EnemySkillList)
+{
+	bool ret = false;
+	UDataTable* pDataTable = LoadObject<UDataTable>(NULL, UTF8_TO_TCHAR("DataTable'/Game/Data/EnemySkillData.EnemySkillData'"));
+	FString ContextString;
+	TArray<FName> RowNames;
+	_EnemySkillList.Empty();
+	RowNames = pDataTable->GetRowNames();
+	for (auto name : RowNames)
+	{
+
+		FSkillData* tempData = pDataTable->FindRow<FSkillData>(name, ContextString);
+		if (tempData != nullptr)
+		{
+			_EnemySkillList.Emplace(*tempData);
+			ret = true;
+		}
+	}
+
+	return ret;
+}
+
 bool UReadImportData::ImportAllEnemyData(TArray<FEnemyData>& EnemyList)
 {
 	bool ret = false;
